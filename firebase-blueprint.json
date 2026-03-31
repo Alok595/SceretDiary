@@ -1,0 +1,137 @@
+{
+  "entities": {
+    "Secret": {
+      "title": "Secret",
+      "description": "An anonymous secret shared by a user.",
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "string",
+          "description": "The content of the secret."
+        },
+        "authorId": {
+          "type": "string",
+          "description": "The anonymous UID of the author."
+        },
+        "authorName": {
+          "type": "string",
+          "description": "A randomly generated anonymous name."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the secret was created."
+        },
+        "likesCount": {
+          "type": "integer",
+          "description": "Number of likes."
+        },
+        "commentsCount": {
+          "type": "integer",
+          "description": "Number of comments."
+        },
+        "viewsCount": {
+          "type": "integer",
+          "description": "Number of views."
+        },
+        "isPrivate": {
+          "type": "boolean",
+          "description": "Whether the secret is private to the author."
+        }
+      },
+      "required": ["content", "authorId", "authorName", "createdAt", "likesCount", "commentsCount", "viewsCount", "isPrivate"]
+    },
+    "Comment": {
+      "title": "Comment",
+      "description": "An anonymous comment on a secret.",
+      "type": "object",
+      "properties": {
+        "secretId": {
+          "type": "string",
+          "description": "The ID of the secret being commented on."
+        },
+        "content": {
+          "type": "string",
+          "description": "The content of the comment."
+        },
+        "authorId": {
+          "type": "string",
+          "description": "The anonymous UID of the author."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the comment was created."
+        }
+      },
+      "required": ["secretId", "content", "authorId", "createdAt"]
+    },
+    "Like": {
+      "title": "Like",
+      "description": "A like on a secret.",
+      "type": "object",
+      "properties": {
+        "secretId": {
+          "type": "string",
+          "description": "The ID of the secret being liked."
+        },
+        "authorId": {
+          "type": "string",
+          "description": "The anonymous UID of the user who liked."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the like was created."
+        }
+      },
+      "required": ["secretId", "authorId", "createdAt"]
+    },
+    "User": {
+      "title": "User",
+      "description": "User profile data.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string"
+        },
+        "displayName": {
+          "type": "string"
+        },
+        "hashedEmail": {
+          "type": "string"
+        },
+        "isOnline": {
+          "type": "boolean"
+        },
+        "lastSeen": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "displayName", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles."
+    },
+    "/secrets/{secretId}": {
+      "schema": "Secret",
+      "description": "Collection of anonymous secrets."
+    },
+    "/secrets/{secretId}/comments/{commentId}": {
+      "schema": "Comment",
+      "description": "Comments on a specific secret."
+    },
+    "/secrets/{secretId}/likes/{likeId}": {
+      "schema": "Like",
+      "description": "Likes on a specific secret."
+    }
+  }
+}

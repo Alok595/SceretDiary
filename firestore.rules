@@ -1,0 +1,85 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.authorId;
+    }
+
+    function isValidSecret(data) {
+      return data.content is string && data.content.size() > 0 && data.content.size() < 5000 &&
+             data.authorId is string && data.authorId == request.auth.uid &&
+             data.authorName is string && data.authorName.size() > 0 && data.authorName.size() < 100 &&
+             data.likesCount is int && data.likesCount >= 0 &&
+             data.commentsCount is int && data.commentsCount >= 0 &&
+             data.isPrivate is bool &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidUser(data) {
+      return data.uid is string && data.uid == request.auth.uid &&
+             data.displayName is string && data.displayName.size() > 0 && data.displayName.size() < 50 &&
+             (!('hashedEmail' in data) || (data.hashedEmail is string && data.hashedEmail.size() < 128)) &&
+             (!('isOnline' in data) || (data.isOnline is bool)) &&
+             (!('lastSeen' in data) || (data.lastSeen is timestamp)) &&
+             (!('createdAt' in data) || (data.createdAt is timestamp));
+    }
+
+    function isValidComment(data) {
+      return data.content is string && data.content.size() > 0 && data.content.size() < 1000 &&
+             data.authorId is string && data.authorId == request.auth.uid &&
+             data.secretId is string &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidLike(data) {
+      return data.authorId is string && data.authorId == request.auth.uid &&
+             data.secretId is string &&
+             data.createdAt is timestamp;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isOwner(userId) && isValidUser(request.resource.data);
+    }
+
+    match /secrets/{secretId} {
+      allow read: if resource.data.isPrivate == false || isDocOwner();
+      allow create: if isAuthenticated() && isValidSecret(request.resource.data);
+      allow update: if isAuthenticated() && (
+        // Allow owner to update privacy, content, or counts
+        (isDocOwner() && isValidSecret(request.resource.data)) ||
+        // Allow others to update ONLY counts (likes, comments, views)
+        (!isDocOwner() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likesCount', 'commentsCount', 'viewsCount']))
+      );
+      allow delete: if isDocOwner();
+
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if isAuthenticated() && isValidComment(request.resource.data);
+        allow delete: if isOwner(resource.data.authorId);
+      }
+
+      match /likes/{likeId} {
+        allow read: if true;
+        allow create: if isAuthenticated() && isValidLike(request.resource.data);
+        allow delete: if isOwner(resource.data.authorId);
+      }
+    }
+  }
+}
